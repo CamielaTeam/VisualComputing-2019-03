@@ -36,7 +36,6 @@ Completar la tabla:
 
 ## Discusión
 
-(describa brevemente las actividades realizadas y los resultados obtenidos)
 Para imágenes:
 Se realizó la conversión a escala de grises con los métodos de rgb average y luma. Se encontró que el método luma mantiene más
 el efecto de brillo en la imágen en comparación al método de rgb average. Se realizó un histograma de color en ambos casos, el
