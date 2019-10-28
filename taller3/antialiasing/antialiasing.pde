@@ -5,12 +5,16 @@ import nub.processing.*;
 // 1. Nub objects
 Scene scene;
 Node node;
-Vector v1, v2, v3, p;
+Vector v1, v2, v3, p, prueba;
+float s=0;
+float w0step= 1.0;
+float w1step= 1.0;
+float w2step= 1.0;
 // timing
 TimingTask spinningTask;
 boolean yDirection;
 // scaling is a power of 2
-int n = 4;
+int n = 6;
 
 // 2. Hints
 boolean triangleHint = true;
@@ -59,6 +63,7 @@ void setup() {
 
   // init the triangle that's gonna be rasterized
   randomizeTriangle();
+  
 }
 
 void draw() {
@@ -83,23 +88,53 @@ void triangleRaster() {
     push();
     noStroke();
         // Rasterize
-    for ( int i = -512; i <= 512; i = i+64 ) {
-      for ( int j = -512; j <= 512; j = j+64 ) {
-        p = new Vector(i, j);
-        float w0 = orient2d(v1, v2, p);
-        float w1 = orient2d(v2, v3, p);
-        float w2 = orient2d(v3, v1, p);
-        if (w0 >= 0 && w1 >= 0 && w2 >= 0){
-          float [] bcMatrix = baricentricCoordinates(v1, v2, v3, p);
-          int blue= int(bcMatrix[0]*255);
-          int red= int(bcMatrix[1]*255);
-          int green= int(bcMatrix[2]*255);
-          fill(red, green, blue, 125);
-          square(round(node.location(p).x()), round(node.location(p).y()), 1);
+    square(1,1, 1);
+    int x = 0;
+    int y=0;
+    Vector[][] subPixelsVector = new Vector[4][4];
+    boolean[][] subPixelsInside =new boolean[4][4];
+    for ( int i = 0; i < 16; i++) {
+       for ( int j = 0; j < 16; j++) {
+
+         int countInside=0;
+          for ( int si = 0; si < 4; si++) {
+            for ( int sj = 0; sj < 4; sj++) {
+               float px= 16*si+64*i;
+               float pj= 16*sj+64*j;
+               p=new Vector(px-512, pj-512);
+               subPixelsVector[si][sj]=p;
+               float w0 = orient2d(v1, v2, p);
+               float w1 = orient2d(v2, v3, p);
+               float w2 = orient2d(v3, v1, p);
+               float w0_new=w0+w0step;
+               float w1_new=w1+w1step;
+               float w2_new=w2+w2step;
+
+               if (w0_new >= 0 && w1_new >= 0 && w2_new >= 0){
+                 subPixelsInside[si][sj]=true;
+                 countInside++;
+               }else{
+                 subPixelsInside[si][sj]=false;
+               }
+            }
+          }
+          
+          for ( int spi = 0; spi < 4; spi++) {
+             for ( int spj = 0;spj < 4;spj++) {
+               float [] bcMatrix = baricentricCoordinates(v1, v2, v3, subPixelsVector[spi][spj]);
+               int blue= int(bcMatrix[0]*255);
+               int red= int(bcMatrix[1]*255);
+               int green= int(bcMatrix[2]*255);
+               if(subPixelsInside[spi][spj]==false){
+                  fill(red, green, blue, countInside*8);
+               }else{
+                  fill(red, green, blue, 125);
+               }
+               square(round(node.location(subPixelsVector[spi][spj]).x()), round(node.location(subPixelsVector[spi][spj]).y()), 1);
+              }
+          }
         }
- 
       }
-    }
     pop();
   }
 }
@@ -117,6 +152,10 @@ void randomizeTriangle() {
   System.out.println("v2y " +round(v2.y()));
   v3 = new Vector(random(low, high), random(low, high));
   determinant = int(v1.x()*(v2.y()-v3.y())-v2.x()*(v1.y()-v3.y())+v3.x()*(v1.y()-v2.y()));
+  
+  w0step=-(v1.y()-v2.y())*s;
+  w1step= -(v2.y()-v3.y())*s;
+  w2step= -(v3.y()-v1.y())*s;
   }
 
 }
@@ -128,7 +167,7 @@ boolean edgeFunction(Vector a, Vector b, Vector p ){
 
 float orient2d(Vector a, Vector b, Vector c)
 {
-    return (b.x()-a.x())*(c.y()-a.y()) - (b.y()-a.y())*(c.x()-a.x());
+    return (b.x()-a.x())*(c.y()-a.y()) - (b.y()-a.y())*(c.x()+5-a.x());
 }
 
 
